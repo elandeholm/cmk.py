@@ -127,9 +127,7 @@ def add_preamble(makefile, config):
 	except:
 		DEFINES = [ config["DEFINES"] ]
 		pass
-#	DEFINES.sort()
-
-
+		
 	config["CC-DEFINES"] = " ".join(DEFINES)
 
 	prepend_flag(config, "CC-FLAGS", "$(CC-DEFINES)")
@@ -150,7 +148,7 @@ def add_exes(makefile, objs):
 	makefile.append("EXES={}\n".format(" ".join(objs)))		
 
 def get_config_if_set(config, variable):
-	if variable in config:
+	if variable in config and len(config[variable]):
 		return "$({})".format(variable)
 	else:
 		return ""
