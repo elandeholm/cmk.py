@@ -164,10 +164,11 @@ def add_obj(makefile, config, name, dependencies):
 
 def add_exe(makefile, config, name, dependencies):
 	ld_flags=get_config_if_set(config, "LD-FLAGS")
+	ld_libs=get_config_if_set(config, "LD-LIBS")
 	odeps = " ".join([ "{}.o".format(d) for d in dependencies])
 	makefile.append(
-		"{}: {}.o {}\n\t$(CC) {} -o {} {} $(LD-LIBS)".format(
-			name, name, odeps, ld_flags, name, odeps
+		"{}: {}.o {}\n\t$(CC) {} -o {} {} {}".format(
+			name, name, odeps, ld_flags, name, odeps, ld_libs
 		)
 	)
 
@@ -255,28 +256,22 @@ def exe_dependencies(name, dependencies):
 	unresolved = [ name ]
 	try:
 		unresolved.extend(dependencies[name])
-		print("unresolved is {}".format(unresolved))
 	except:
 		raise
 	while len(unresolved):
-		print("** unresolved is {}".format(unresolved))
 		unresolved_new = set()
 		for name2 in unresolved:
 			if name2 in deps: # I've already done you!
-				print("already dun {}".format(name2))
+				pass
 			else:
 				deps.add(name2)
 			try:
 				deps_new = [ d for d in dependencies[name2] if not d in deps ]
 				for new in deps_new:
 					unresolved_new.add(new)
-				print("name is {}, deps_new is {}".format(name2, deps_new))
 			except KeyError:
 				print("KeyError on {}".format(name2))
-		print("** unresolved is {}, unresolved_new is {}".format(unresolved, unresolved_new))
 		unresolved = unresolved_new
-		
-	print("returning {}".format(deps))
 	return sorted(deps)
 
 if __name__ == "__main__":
@@ -306,12 +301,9 @@ if __name__ == "__main__":
 			with open(file_name, "rb") as cfile:
 				main, deps = scanner(cfile)
 				dependencies[name] = sorted(deps)
-				print("added dependency[{}]: {}".format(name, dependencies[name]))
 				objs.add(name)
-				print("added obj: {}".format(name))
 				if main:
 					exes.add(name)
-				print("added exe: {}".format(name))
 
 	objs_ordered = sorted(objs)
 	exes_ordered = sorted(exes)
