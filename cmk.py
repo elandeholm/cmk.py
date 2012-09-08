@@ -72,24 +72,31 @@ def add_configurable(makefile, config, variable):
 			try:
 				flags = []
 				for flag in value:
+					print("flag is: {}".format(flag))
 					if flag[0] != "-" and flag[0] != "$":
 						flags.append("-{}".format(flag))
+					else:
+						flags.append(flag)
 				value = " ".join(flags)
 			except:
 				pass
 		elif variable.endswith("LIBS"):
 			try:
-				flags = []
-				for flag in value:
-					if flag[0] != "-":
-						flags.append("-l{}".format(flag))
-				value = " ".join(flags)
+				libs = []
+				for lib in value:
+					if lib[0] != "-" and lib[0] != "$":
+						libs.append("-l{}".format(lib))
+					else:
+						libs.append(lib)
+				value = " ".join(libs)
 			except:
 				pass		
 		else:
 			value = values
 	except:
 		value = ""
+		
+	print("value is {}".format(value))
 	makefile.append("{}={{}}".format(variable).format(value))
 
 def add_configurables(makefile, config, variables):
@@ -105,6 +112,7 @@ def prepend_flag(config, flag, first):
 		else:
 			config[flag] = [ first, value ]
 	except KeyError:
+		raise
 		config[flag] = [ first ]	
 
 def add_preamble(makefile, config):
@@ -129,6 +137,7 @@ def add_preamble(makefile, config):
 		pass
 		
 	config["CC-DEFINES"] = " ".join(DEFINES)
+
 
 	prepend_flag(config, "CC-FLAGS", "$(CC-DEFINES)")
 	prepend_flag(config, "CC-DFLAGS", "$(CC-FLAGS)")
