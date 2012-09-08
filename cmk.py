@@ -14,6 +14,7 @@ CMKSH_WRAP="./.cmksh-wrap"
 
 def defaults(config):
 	# sane defaults
+	config["COMMENT"] = [ ]
 	config["CC"] = "gcc"
 	config["LD"] = "gcc"
 	config["RM"] = "rm"
@@ -22,7 +23,7 @@ def defaults(config):
 	config["CC-DFLAGS"] = [ "g", "DDEBUG" ]
 	config["CC-OFLAGS"] = [ "O2", "native" ]
 	config["LD-FLAGS"] = [ ]
-	config["RM-FLAGS"] = "f"
+	config["RM-FLAGS"] = [ "f" ]
 	config["LD-LIBS"] = [ ]
 
 def execute(cmd, env=False, inp=None):
@@ -72,7 +73,6 @@ def add_configurable(makefile, config, variable):
 			try:
 				flags = []
 				for flag in value:
-					print("flag is: {}".format(flag))
 					if flag[0] != "-" and flag[0] != "$":
 						flags.append("-{}".format(flag))
 					else:
@@ -94,9 +94,7 @@ def add_configurable(makefile, config, variable):
 		else:
 			value = values
 	except:
-		value = ""
-		
-	print("value is {}".format(value))
+		value = ""		
 	makefile.append("{}={{}}".format(variable).format(value))
 
 def add_configurables(makefile, config, variables):
@@ -116,8 +114,7 @@ def prepend_flag(config, flag, first):
 		config[flag] = [ first ]	
 
 def add_preamble(makefile, config):
-	if "PREAMBLE" in config:
-		makefile.append(config["PREAMBLE"])
+	makefile.append("# {}".format(" ".join(config["COMMENT"])))
 	add_configurables(makefile, config, [ "CC", "RM" ])
 	DEFINES=[]
 	try:
@@ -135,14 +132,10 @@ def add_preamble(makefile, config):
 	except:
 		DEFINES = [ config["DEFINES"] ]
 		pass
-		
 	config["CC-DEFINES"] = " ".join(DEFINES)
-
-
 	prepend_flag(config, "CC-FLAGS", "$(CC-DEFINES)")
 	prepend_flag(config, "CC-DFLAGS", "$(CC-FLAGS)")
 	prepend_flag(config, "CC-OFLAGS", "$(CC-FLAGS)")
-
 	add_configurables(makefile, config, [
 		"CC-DEFINES", "CC-FLAGS", "CC-DFLAGS", "CC-OFLAGS", "LD-FLAGS", "RM-FLAGS", "LD-LIBS"
 	])
@@ -222,10 +215,7 @@ def dotcmk(file_name, lines=[]):
 		try:
 			equals = line.index("=")
 			name = line[:equals]
-			if name == "DEFINES":
-				value = shlex.split(line[equals+1:], False)
-			else:
-				value = line[equals+1:]
+			value = shlex.split(line[equals+1:], True)
 			config[name] = value
 		except:
 			if line and not line.isspace():
@@ -291,6 +281,7 @@ if __name__ == "__main__":
 	config = configure()	
 
 	do_make = False
+	libs = []
 	make_args = []
 	cmk_args = []
 	cmk_arg = True
@@ -299,10 +290,23 @@ if __name__ == "__main__":
 			cmk_arg = False
 			do_make = True
 		elif cmk_arg:
-			cmk_args.append(arg)
+			if arg.startswith("-l"):
+				libs.append(arg)
+			else:
+				cmk_args.append(arg)
 		else:
 			make_args.append(arg)
 	config.update(dotcmk(None, cmk_args))
+
+	if libs:
+		cll = config["LD-LIBS"]
+		if cll:
+			if list(cll) != cll:
+				cll = [ cll ]
+			cll.extend(libs)
+		else:
+			cll = libs
+		config["LD-LIBS"] = cll
 
 	for file_name in os.listdir("."):
 		name, ext = os.path.splitext(file_name)
